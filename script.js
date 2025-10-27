@@ -2,36 +2,50 @@ const charactersGrid = document.getElementById('charactersGrid');
 const errorMessage = document.getElementById('errorMessage');
 const emptyState = document.getElementById('emptyState');
 
-document.getElementById('searchInput').addEventListener('input', function() {
-    const searchTerm = this.value.trim();
+document.getElementById('searchBtn').addEventListener('click', function() {
+    const searchTerm = document.getElementById("searchInput").value.trim()
+    const url = `https://rickandmortyapi.com/api/character/?name=${searchTerm}`
 
     if (searchTerm === '') {
         showEmptyState();
         return;
-    } else{
-        searchCharacters(searchTerm);
+    } else {
+        searchCharacters(url);
     }
 });
 
-async function searchCharacters(searchTerm) {
+async function searchCharacters(url) {
     try {
-        const response = await fetch(`https://rickandmortyapi.com/api/character/?name=${searchTerm}`);
-        
-        if (!response.ok) {
-            if (response.status === 404) {
-                showError('No se encontraron personajes con ese nombre');
-            } else {
-                showError('Error al buscar personajes. Intenta nuevamente.');
+        let allCharacters = [];
+        let nextPage = url;
+
+        while (nextPage) {
+            const response = await fetch(nextPage);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    showError('No se encontraron personajes con ese nombre');
+                } else {
+                    showError('Error al buscar personajes. Intenta nuevamente.');
+                }
+                return;
             }
+
+            const data = await response.json();
+            allCharacters.push(...data.results);
+            nextPage = data.info.next;
+        }
+
+        if (allCharacters.length === 0) {
+            showError('No se encontraron personajes con ese nombre');
             return;
         }
 
-        const data = await response.json();
-        displayCharacters(data.results);
+        displayCharacters(allCharacters);
     } catch (error) {
         showError('Error de conexión.');
     }
-}
+};
 
 function displayCharacters(characters) {
     hideAllStates();
@@ -69,22 +83,22 @@ function displayCharacters(characters) {
         
         charactersGrid.innerHTML += cardHTML;
     });
-}
 
+};
 
 function showError(message) {
     hideAllStates();
     errorMessage.textContent = message;
     errorMessage.classList.remove('d-none');
-}
+};
 
 function showEmptyState() {
     hideAllStates();
     emptyState.classList.remove('d-none');
-}
+};
 
 function hideAllStates() {
     errorMessage.classList.add('d-none');
     emptyState.classList.add('d-none');
     charactersGrid.innerHTML = '';
-}
+};
